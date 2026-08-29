@@ -1,0 +1,6 @@
+[Plymouth Theme]
+Name=Euler
+Description=Scandinavian light
+ModuleName=script
+ImageDir=/usr/share/plymouth/themes/euler
+ScriptFile=/usr/share/plymouth/themes/euler/euler.script

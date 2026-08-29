@@ -9,7 +9,7 @@ authors = ["Euler OS Contributors"]
 license = "GPL-3.0-or-later"
 repository = "https://github.com/Diez111/Euler"
 rust-version = "1.88"
-description = "Euler OS — Debian Testing BTRFS distro, <500MB idle, COSMIC-free base"
+description = "Euler OS — Debian Testing BTRFS distro, <500MB idle, Euler base limpia"
 keywords = ["distro", "btrfs", "luks", "debian"]
 categories = ["os"]
 
@@ -18,8 +18,10 @@ euler-core = { path = "crates/euler-core" }
 euler-installer = { path = "crates/euler-installer" }
 
 [profile.release]
-lto = "thin"
+lto = "fat"
 codegen-units = 1
 panic = "abort"
-strip = "debuginfo"
+strip = true
 opt-level = 3
+overflow-checks = false
+debug-assertions = false

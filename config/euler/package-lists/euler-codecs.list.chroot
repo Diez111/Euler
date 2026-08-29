@@ -1,0 +1,20 @@
+# Euler codecs opcionales — incluye solo con --with-codecs
+# Video (GStreamer accel + compat) — h264/hevc/vp9/av1
+gstreamer1.0-libav
+gstreamer1.0-plugins-bad
+gstreamer1.0-plugins-ugly
+gstreamer1.0-plugins-good
+gstreamer1.0-vaapi
+# Imagen — visores y thumbnails (webp/heif/avif)
+heif-gdk-pixbuf
+webp-pixbuf-loader
+libavif-gdk-pixbuf
+libavif16
+# Bluetooth — stack inalámbrico (deshabilitado por preset, se habilita si hw detectado)
+bluez
+bluez-firmware
+# Audio extra — codecs propietarios
+libavcodec-extra
+# VAAPI / Vulkan — accel video ya en minbase pero reforzado para codecs
+vulkan-tools
+libva-drm2

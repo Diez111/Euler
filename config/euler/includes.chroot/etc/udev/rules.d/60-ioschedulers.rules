@@ -1,5 +1,8 @@
-# Euler IO schedulers — NVMe none (multi-queue noop), SATA mq-deadline
+# Euler IO schedulers — NVMe none (multi-queue noop), SATA mq-deadline, VM/ARM cubiertos
 ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="none"
 ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]p[0-9]", ATTR{queue/scheduler}="none"
 ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/scheduler}="mq-deadline"
+ACTION=="add|change", KERNEL=="vd[a-z]", ATTR{queue/scheduler}="none"
+ACTION=="add|change", KERNEL=="mmcblk[0-9]*", ATTR{queue/scheduler}="mq-deadline"
 ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/add_random}="0"
+ACTION=="add|change", KERNEL=="vd[a-z]", ATTR{queue/add_random}="0"

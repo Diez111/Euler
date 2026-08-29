@@ -1,27 +1,28 @@
-# Euler GRUB theme — Mac-style minimalista, oscuro, blur
+# Euler GRUB theme — Scandinavian light, minimal
 # Compatible con gfxterm 1440p/4K
+# Palette: canvas #FFFFFF, ink 87% #000000, secondary 60% #00000099, selected 87% #000000DE, fill 6% #0000000F
+# corner-radius: 12 — gfxterm does not natively clip radius; keep as design token (supported by some forks via + boot_menu corner-radius)
 
 + boot_menu {
   left = 30%
   top = 30%
   width = 40%
   height = 40%
-  item_height = 32
+  # alternative 42% min(720) centered — gfxterm uses % only; 40% ~ 576px@1440p / 42% ~ 605px, both centered
+  item_height = 40
   item_spacing = 8
   align = center
-}
-
-+ label { text = "Euler OS" color = "#E8E8E8" font = "Euler Regular 24" align = center }
-
-desktop-image: "background.png"
-desktop-color: "#0a0a0f"
-title-color: "#ffffff"
-title-font: "Euler Regular 18"
-
-# Selección con pill redondeado estilo Mac
-+ boot_menu {
-  selected_item_color = "#ffffff"
+  # padding: 12 — outer padding for pill list (apply via item spacing + background fill)
+  selected_item_color = "#000000DE"
   selected_item_font = "Euler Regular 16"
-  item_color = "#a3a3a3"
+  selected_item_background = "#0000000F"
+  item_color = "#00000099"
   item_font = "Euler Regular 16"
 }
+
++ label { text = "Euler OS" color = "#000000" font = "Euler Regular 24" align = center }
+
+desktop-image: "background.png" # asset neutralized to solid white with 4% grid
+desktop-color: "#FFFFFF"
+title-color: "#000000"
+title-font: "Euler Regular 18"

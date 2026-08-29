@@ -15,6 +15,8 @@ wayland-protocols
 wayland-utils
 mesa-vulkan-drivers
 mesa-va-drivers
+vulkan-tools
+libva-drm2
 libgl1-mesa-dri
 libglx-mesa0
 libinput10
@@ -32,7 +34,6 @@ alsa-utils
 network-manager
 iwd
 wpasupplicant
-zram-tools
 systemd-zram-generator
 btrfs-progs
 cryptsetup

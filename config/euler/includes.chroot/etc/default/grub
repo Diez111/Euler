@@ -3,6 +3,10 @@ GRUB_DEFAULT=0
 GRUB_TIMEOUT=2
 GRUB_TIMEOUT_STYLE=menu
 GRUB_DISTRIBUTOR="Euler"
+# Base cmdline — verificada contra docs/gpu-igpu-optimization.md §4.1/§4.2 y validate-iso.sh
+# Per-GPU additions vía hw detection en install time: HwProfile::kernel_additions() (crates/euler-core/src/hw.rs:251)
+#   Intel → "i915.enable_guc=3 i915.enable_fbc=1"  |  AMD → "amdgpu.ppfeaturemask=0xffffffff amd_pstate=active"
+#   Se inyectan como InstallStepKind::HwPackages / kernel cmdline en el plan del installer (ver crates/euler-core/src/install.rs:56).
 GRUB_CMDLINE_LINUX_DEFAULT="quiet splash mitigations=auto,nosmt preempt=voluntary transparent_hugepage=madvise init_on_alloc=0 init_on_free=0 zswap.enabled=0 nowatchdog nmi_watchdog=0 nvme_core.default_ps_max_latency_us=0"
 GRUB_CMDLINE_LINUX=""
 GRUB_TERMINAL_OUTPUT=gfxterm

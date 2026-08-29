@@ -2,7 +2,7 @@
 
 Debian Testing minimal BTRFS distro — <500MB idle SSD 8GB, nativa 100% Rust (salvo kernel), estilo Mac, base limpia reproducible.
 
-> Base sin COSMIC (fork aparte `/tmp/cosmic-epoch` → `Euler-COSMIC`). Esta capa es la ISO base que validaste: `vm.swappiness=180`, `zram 512M`, `oomd`, `schedulers none/mq-deadline`, `mitigations=auto nosmt preempt=voluntary`.
+> Base sin entorno gráfico (base limpia Euler, fork anterior /tmp/cosmic-epoch integrado como Euler). Esta capa es la ISO base que validaste: `vm.swappiness=180`, `zram 512M`, `oomd`, `schedulers none/mq-deadline`, `mitigations=auto nosmt preempt=voluntary`.
 
 ## Estructura
 

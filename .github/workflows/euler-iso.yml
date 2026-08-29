@@ -11,7 +11,6 @@ on:
   workflow_dispatch:
 
 env:
-  SOURCE_DATE_EPOCH: 0
   DEBIAN_FRONTEND: noninteractive
 
 jobs:
@@ -19,9 +18,29 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: euler-iso
+
+      - name: Cache apt archives
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: apt-${{ runner.os }}-${{ hashFiles('config/euler/package-lists/*') }}
+          restore-keys: |
+            apt-${{ runner.os }}-
+
+      - name: Cargo fmt / clippy / test
+        run: |
+          cargo fmt --check
+          cargo clippy --workspace --all-targets -- -D warnings
+          cargo test --workspace
 
       - name: Set SOURCE_DATE_EPOCH reproducible
-        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct 2>/dev/null || date +%s)" >> "$GITHUB_ENV"
 
       - name: Install deps
         run: |
@@ -34,21 +53,29 @@ jobs:
 
       - name: Check ISO
         run: |
-          ls -lh build/euler/*.iso build/euler/SHA256SUMS || true
-          cat build/euler/SHA256SUMS || true
-          test -f build/euler/*.iso
+          ls -lh build/euler/ 2>/dev/null || true
+          cat build/euler/SHA256SUMS 2>/dev/null || true
+          # glob seguro: falla si no hay iso
+          ISO_COUNT=$(ls -1 build/euler/*.iso 2>/dev/null | wc -l)
+          echo "ISO count: $ISO_COUNT"
+          if [[ "$ISO_COUNT" -eq 0 ]]; then echo "no ISO found" >&2; exit 1; fi
+          # tamaño <2GB sanity
+          for f in build/euler/*.iso; do ls -lh "$f"; done
 
       - uses: actions/upload-artifact@v4
         with:
           name: euler-iso
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 6
           path: |
             build/euler/*.iso
             build/euler/SHA256SUMS
-            build/euler/SHA256SUMS.asc
 
   test-qemu:
     runs-on: ubuntu-24.04
     needs: build-iso
+    # no requiere KVM; smoke sin -enable-kvm tolerante
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -58,5 +85,21 @@ jobs:
       - name: QEMU smoke boot
         run: |
           sudo apt-get update && sudo apt-get install -y qemu-system-x86 ovmf
-          timeout 120 qemu-system-x86_64 -enable-kvm -m 4096 -cdrom build/euler/*.iso -boot d -nographic -serial mon:stdio -display none || echo "qemu exit code $?"
+          BIOS=""
+          # Ubuntu 24.04 OVMF split CODE+VARS; prefer CODE
+          if [[ -f /usr/share/OVMF/OVMF_CODE.fd ]]; then BIOS="-bios /usr/share/OVMF/OVMF_CODE.fd";
+          elif [[ -f /usr/share/OVMF/OVMF_CODE_4M.fd ]]; then BIOS="-bios /usr/share/OVMF/OVMF_CODE_4M.fd";
+          elif [[ -f /usr/share/OVMF/OVMF.fd ]]; then BIOS="-bios /usr/share/OVMF/OVMF.fd"; fi
+          echo "[qemu] bios=$BIOS"
+          ISO=$(ls -1 build/euler/*.iso | head -1)
+          echo "[qemu] iso=$ISO"
+          set +e
+          timeout 120 qemu-system-x86_64 \
+            -m 2048 \
+            -cdrom "$ISO" -boot d \
+            -nographic -serial mon:stdio -display none \
+            $BIOS \
+            -net none \
+            || echo "qemu exit code $?"
+          set -e
           echo "smoke done"

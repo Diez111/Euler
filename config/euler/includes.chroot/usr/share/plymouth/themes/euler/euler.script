@@ -1,0 +1,71 @@
+Window.SetBackgroundTopColor(1, 1, 1);
+Window.SetBackgroundBottomColor(1, 1, 1);
+
+# Euler — Scandinavian light
+# Canvas #FFFFFF, progress bar ink 12% (#1F1F1F) thin 2px
+# ShowDelay 0 is in plymouthd.conf
+
+bar_width = Window.GetWidth() * 0.28;
+bar_height = 2;
+bar_x = Window.GetX() + (Window.GetWidth() - bar_width) / 2;
+bar_y = Window.GetY() + Window.GetHeight() * 0.78;
+
+# track: very light #EEEEEE, fill: ink 12% 0.12
+track_color_r = 0.93;
+track_color_g = 0.93;
+track_color_b = 0.93;
+fill_color_r = 0.12;
+fill_color_g = 0.12;
+fill_color_b = 0.12;
+
+# create 1x1 solid blocks via Text "█" then Scale — solid, crisp
+track_block = Image.Text("█", track_color_r, track_color_g, track_color_b);
+track_image = track_block.Scale(bar_width, bar_height);
+track_sprite = Sprite(track_image);
+track_sprite.SetPosition(bar_x, bar_y, 0);
+track_sprite.SetOpacity(1);
+
+fill_block = Image.Text("█", fill_color_r, fill_color_g, fill_color_b);
+fill_original = fill_block.Scale(bar_width, bar_height);
+fill_image = fill_original.Scale(0, bar_height);
+fill_sprite = Sprite(fill_image);
+fill_sprite.SetPosition(bar_x, bar_y, 1);
+fill_sprite.SetOpacity(1);
+
+fun progress_callback(duration, progress) {
+    if (Plymouth.GetMode() != "boot")
+        return;
+    if (progress < 0) progress = 0;
+    if (progress > 1) progress = 1;
+    w = Math.Int(bar_width * progress);
+    if (w < 0) w = 0;
+    if (w > bar_width) w = bar_width;
+    if (w == 0) {
+        fill_sprite.SetOpacity(0);
+    } else {
+        fill_image_new = fill_original.Scale(w, bar_height);
+        fill_sprite.SetImage(fill_image_new);
+        fill_sprite.SetOpacity(1);
+    }
+}
+
+fun refresh_callback() {
+    Window.SetBackgroundTopColor(1, 1, 1);
+    Window.SetBackgroundBottomColor(1, 1, 1);
+    # re-center on resize
+    bar_width = Window.GetWidth() * 0.28;
+    bar_x = Window.GetX() + (Window.GetWidth() - bar_width) / 2;
+    bar_y = Window.GetY() + Window.GetHeight() * 0.78;
+    track_sprite.SetPosition(bar_x, bar_y, 0);
+    fill_sprite.SetPosition(bar_x, bar_y, 1);
+}
+
+Plymouth.SetBootProgressFunction(progress_callback);
+Plymouth.SetRefreshFunction(refresh_callback);
+Plymouth.SetDisplayNormalFunction(refresh_callback);
+Plymouth.SetDisplayPasswordFunction(refresh_callback);
+
+fun quit_callback() {
+}
+
+Plymouth.SetQuitFunction(quit_callback);

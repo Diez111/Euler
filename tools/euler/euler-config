@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# euler-config — toggles post-instalación Euler
+# Uso: euler-config printer enable|disable|status
+#      euler-config bluetooth enable|disable|status
+# Minimal Scandinavian: left-aligned help, short comments
+set -euo pipefail
+
+print_help() {
+cat <<'HELP'
+Uso: euler-config <modulo> <accion>
+Modulos:
+printer    enable|disable|status  — CUPS (cups, cups-browsed, usblp)
+bluetooth  enable|disable|status  — BlueZ (bluetooth.service, btusb)
+Acciones:
+enable   Activa y arranca servicio
+disable  Detiene y desactiva servicio
+status   Muestra estado (no requiere root)
+Ejemplos:
+sudo euler-config printer enable
+sudo euler-config printer status
+sudo euler-config bluetooth enable
+sudo euler-config bluetooth status
+HELP
+}
+
+need_root() {
+if [[ $EUID -ne 0 ]]; then
+echo "requiere root: sudo $0 $*" >&2
+exit 1
+fi
+}
+
+# printer — CUPS stack
+cmd_printer_enable() {
+need_root "printer enable"
+systemctl unmask cups.service cups-browsed.service 2>/dev/null || true
+systemctl enable --now cups.service cups-browsed.service
+modprobe usblp 2>/dev/null || true
+echo "[ok] printer enabled (cups, cups-browsed, usblp)"
+}
+
+cmd_printer_disable() {
+need_root "printer disable"
+systemctl disable --now cups.service cups-browsed.service 2>/dev/null || true
+echo "[ok] printer disabled"
+}
+
+cmd_printer_status() {
+echo "printer status:"
+systemctl is-enabled cups.service >/dev/null 2>&1 && echo "cups enabled" || echo "cups disabled"
+systemctl is-active cups.service >/dev/null 2>&1 && echo "cups active" || echo "cups inactive"
+systemctl is-enabled cups-browsed.service >/dev/null 2>&1 && echo "cups-browsed enabled" || echo "cups-browsed disabled"
+systemctl is-active cups-browsed.service >/dev/null 2>&1 && echo "cups-browsed active" || echo "cups-browsed inactive"
+if lsmod 2>/dev/null | grep -q "^usblp"; then
+echo "usblp loaded"
+else
+echo "usblp not loaded"
+fi
+if systemctl is-enabled cups.service >/dev/null 2>&1 && systemctl is-enabled cups-browsed.service >/dev/null 2>&1 && systemctl is-active cups.service >/dev/null 2>&1 && systemctl is-active cups-browsed.service >/dev/null 2>&1; then
+echo "[ok] printer ready"
+else
+echo "[info] printer not fully active — run: sudo euler-config printer enable"
+fi
+}
+
+# bluetooth — BlueZ stack (consistencia con printer)
+cmd_bluetooth_enable() {
+need_root "bluetooth enable"
+systemctl unmask bluetooth.service 2>/dev/null || true
+rfkill unblock bluetooth 2>/dev/null || true
+systemctl enable --now bluetooth.service
+modprobe btusb 2>/dev/null || true
+echo "[ok] bluetooth enabled (bluetooth.service, btusb)"
+}
+
+cmd_bluetooth_disable() {
+need_root "bluetooth disable"
+systemctl disable --now bluetooth.service 2>/dev/null || true
+echo "[ok] bluetooth disabled"
+}
+
+cmd_bluetooth_status() {
+echo "bluetooth status:"
+systemctl is-enabled bluetooth.service >/dev/null 2>&1 && echo "bluetooth enabled" || echo "bluetooth disabled"
+systemctl is-active bluetooth.service >/dev/null 2>&1 && echo "bluetooth active" || echo "bluetooth inactive"
+rfkill list bluetooth 2>/dev/null || echo "rfkill not available"
+lsmod 2>/dev/null | grep -q "^btusb" && echo "btusb loaded" || echo "btusb not loaded"
+}
+
+main() {
+local mod="${1:-}"
+local act="${2:-}"
+case "$mod" in
+printer)
+case "$act" in
+enable) cmd_printer_enable ;;
+disable) cmd_printer_disable ;;
+status) cmd_printer_status ;;
+*) echo "accion desconocida: ${act:-<vacia>} (use: enable|disable|status)" >&2; print_help; exit 2 ;;
+esac
+;;
+bluetooth)
+case "$act" in
+enable) cmd_bluetooth_enable ;;
+disable) cmd_bluetooth_disable ;;
+status) cmd_bluetooth_status ;;
+*) echo "accion desconocida: ${act:-<vacia>} (use: enable|disable|status)" >&2; print_help; exit 2 ;;
+esac
+;;
+help|--help|-h|"")
+print_help
+;;
+*)
+echo "modulo desconocido: $mod" >&2
+print_help
+exit 2
+;;
+esac
+}
+
+main "$@"

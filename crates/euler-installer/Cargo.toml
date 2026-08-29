@@ -16,6 +16,14 @@ path = "src/main.rs"
 name = "euler-installer-daemon"
 path = "src/daemon.rs"
 
+[[bin]]
+name = "euler-installer-gui"
+path = "src/gui.rs"
+required-features = ["gui"]
+
+[features]
+gui = []
+
 [dependencies]
 euler-core = { path = "../euler-core" }
 serde = { version = "1.0", features = ["derive"] }
@@ -23,3 +31,6 @@ serde_json = "1.0"
 anyhow = "=1.0.103"
 thiserror = "1.0"
 uuid = { version = "=1.20.0", features = ["v4"] }
+wait-timeout = "0.2"
+zeroize = { version = "1.7", features = ["zeroize_derive"] }
+libc = "0.2"

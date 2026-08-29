@@ -1,0 +1,6 @@
+# Euler impresión opcional — incluye solo con --with-print
+# CUPS + drivers Gutenprint — soporte impresoras USB/red
+cups
+cups-browsed
+printer-driver-gutenprint
+system-config-printer

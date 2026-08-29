@@ -10,9 +10,11 @@ disable evolution-source-registry.service
 disable gnome-software.service
 disable packagekit.service
 disable ModemManager.service
+# cups/cups-browsed deshabilitados por defecto (<500MB); impresora habilita via `systemctl enable cups.service cups-browsed.service` en InstallSteps si enable_printer
 disable cups.service
 disable cups-browsed.service
 disable avahi-daemon.service
+# bluetooth.service deshabilitado por defecto (<500MB); hw detection habilita via `systemctl enable bluetooth.service` si has_bluetooth
 disable bluetooth.service
 disable colord.service
 disable switcheroot-control.service
