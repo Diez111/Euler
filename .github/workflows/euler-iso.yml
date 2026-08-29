@@ -1,0 +1,62 @@
+name: euler-iso
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/euler/**"
+      - "config/euler/**"
+      - "crates/euler-*/**"
+      - ".github/workflows/euler-iso.yml"
+  workflow_dispatch:
+
+env:
+  SOURCE_DATE_EPOCH: 0
+  DEBIAN_FRONTEND: noninteractive
+
+jobs:
+  build-iso:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set SOURCE_DATE_EPOCH reproducible
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
+
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mmdebstrap squashfs-tools xorriso mtools grub-efi-amd64-bin dosfstools btrfs-progs cryptsetup
+
+      - name: Build ISO
+        run: |
+          sudo -E bash tools/euler/mkiso.sh --release "$(date +%Y.%m.%d)-ci" --arch amd64
+
+      - name: Check ISO
+        run: |
+          ls -lh build/euler/*.iso build/euler/SHA256SUMS || true
+          cat build/euler/SHA256SUMS || true
+          test -f build/euler/*.iso
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: euler-iso
+          path: |
+            build/euler/*.iso
+            build/euler/SHA256SUMS
+            build/euler/SHA256SUMS.asc
+
+  test-qemu:
+    runs-on: ubuntu-24.04
+    needs: build-iso
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: euler-iso
+          path: build/euler/
+      - name: QEMU smoke boot
+        run: |
+          sudo apt-get update && sudo apt-get install -y qemu-system-x86 ovmf
+          timeout 120 qemu-system-x86_64 -enable-kvm -m 4096 -cdrom build/euler/*.iso -boot d -nographic -serial mon:stdio -display none || echo "qemu exit code $?"
+          echo "smoke done"

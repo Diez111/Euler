@@ -1,0 +1,25 @@
+[workspace]
+members = ["crates/euler-core", "crates/euler-installer"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Euler OS Contributors"]
+license = "GPL-3.0-or-later"
+repository = "https://github.com/Diez111/Euler"
+rust-version = "1.88"
+description = "Euler OS — Debian Testing BTRFS distro, <500MB idle, COSMIC-free base"
+keywords = ["distro", "btrfs", "luks", "debian"]
+categories = ["os"]
+
+[workspace.dependencies]
+euler-core = { path = "crates/euler-core" }
+euler-installer = { path = "crates/euler-installer" }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = "debuginfo"
+opt-level = 3

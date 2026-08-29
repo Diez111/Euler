@@ -1,0 +1,22 @@
+# Euler preset — deshabilita servicios que rompen <500MB
+disable tracker-miner-fs-3.service
+disable tracker-miner-fs-control-3.service
+disable tracker-extract-3.service
+disable tracker-writeback-3.service
+disable tracker-xdg-portal-3.service
+disable evolution-calendar-factory.service
+disable evolution-addressbook-factory.service
+disable evolution-source-registry.service
+disable gnome-software.service
+disable packagekit.service
+disable ModemManager.service
+disable cups.service
+disable cups-browsed.service
+disable avahi-daemon.service
+disable bluetooth.service
+disable colord.service
+disable switcheroot-control.service
+enable systemd-oomd.service
+enable btrfs-scrub@-.timer
+enable btrfs-balance.timer
+enable fstrim.timer

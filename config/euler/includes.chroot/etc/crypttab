@@ -1,0 +1,3 @@
+# Euler crypttab — LUKS2 argon2id. Instalador escribe UUID real.
+# luks-euler  UUID=<uuid-del-p2>  none  luks,discard,no-read-workqueue,no-write-workqueue
+# allow-discards necesario para que discard=async llegue al SSD

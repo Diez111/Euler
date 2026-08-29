@@ -1,0 +1,11 @@
+PRETTY_NAME="Euler OS (testing)"
+NAME="Euler"
+VERSION_ID="2026.09"
+VERSION="2026.09 (testing)"
+VERSION_CODENAME=forky
+ID=euler
+ID_LIKE=debian
+HOME_URL="https://euler.bo/"
+SUPPORT_URL="https://euler.bo/support"
+BUG_REPORT_URL="https://github.com/euler-os/euler/issues"
+DEBIAN_VERSION_FULL="testing"

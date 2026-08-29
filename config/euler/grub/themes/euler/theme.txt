@@ -1,0 +1,27 @@
+# Euler GRUB theme — Mac-style minimalista, oscuro, blur
+# Compatible con gfxterm 1440p/4K
+
++ boot_menu {
+  left = 30%
+  top = 30%
+  width = 40%
+  height = 40%
+  item_height = 32
+  item_spacing = 8
+  align = center
+}
+
++ label { text = "Euler OS" color = "#E8E8E8" font = "Euler Regular 24" align = center }
+
+desktop-image: "background.png"
+desktop-color: "#0a0a0f"
+title-color: "#ffffff"
+title-font: "Euler Regular 18"
+
+# Selección con pill redondeado estilo Mac
++ boot_menu {
+  selected_item_color = "#ffffff"
+  selected_item_font = "Euler Regular 16"
+  item_color = "#a3a3a3"
+  item_font = "Euler Regular 16"
+}

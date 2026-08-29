@@ -1,0 +1,11 @@
+# Euler fstab — BTRFS con compresión zstd:1, discard async, noatime, ssd
+# Generado por instalador; este es fallback live. Instalador reemplaza UUIDs.
+# EFI debe ser 1G para kernels zstd + fallback
+# UUID=EFI  /boot/efi  vfat  umask=0077,shortname=winnt 0 1
+# /dev/mapper/luks-euler  /  btrfs  subvol=@,compress=zstd:1,noatime,ssd,discard=async,space_cache=v2,commit=30 0 0
+# /dev/mapper/luks-euler  /home  btrfs  subvol=@home,compress=zstd:1,noatime,ssd,discard=async,space_cache=v2 0 0
+# /dev/mapper/luks-euler  /.snapshots  btrfs  subvol=@snapshots,noatime,ssd,discard=async,space_cache=v2 0 0
+# /dev/mapper/luks-euler  /var/log  btrfs  subvol=@var_log,compress=zstd:1,noatime,ssd,discard=async 0 0
+# /dev/mapper/luks-euler  /var/cache  btrfs  subvol=@var_cache,compress=zstd:1,noatime,ssd,discard=async 0 0
+# tmpfs
+tmpfs  /tmp  tmpfs  defaults,noatime,mode=1777  0  0
