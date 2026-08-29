@@ -20,10 +20,9 @@ libva-drm2
 libgl1-mesa-dri
 libglx-mesa0
 libinput10
-xf86-input-libinput
+xserver-xorg-input-libinput
 libseat1
 seatd
-policykit-1
 polkitd
 pipewire
 pipewire-pulse

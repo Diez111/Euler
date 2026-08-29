@@ -123,14 +123,13 @@ if [[ -z "$PKG_INCLUDE" ]]; then
     echo "[error] package-lists vacío tras filtrar" >&2; exit 1
 fi
 echo "[pkg] $PKG_INCLUDE"
-# apt cache opcional en host para acelerar rebuilds (bind mount vía Dir::Cache::Archives)
-mkdir -p "$BUILD_DIR/apt-cache"
 mmdebstrap \
     --variant="$VARIANT" \
     --arch="$ARCH" \
+    --components="main,contrib,non-free,non-free-firmware" \
     --include="$PKG_INCLUDE" \
-    --aptopt="Dir::Cache::Archives $BUILD_DIR/apt-cache" \
     --aptopt='Acquire::Retries=3' \
+    --hook-dir=/usr/share/mmdebstrap/hooks/file-mirror-automount \
     "$DIST" "$CHROOT_DIR" "$MIRROR"
 
 # 2. Copiar config Euler dentro del chroot
@@ -175,7 +174,7 @@ rm -rf /var/lib/apt/lists/* /var/cache/apt/* /usr/share/doc/* /usr/share/man/* 2
 # 4. SquashFS zstd:$SQUASHFS_LEVEL (22% menor que xz, boot 12s vs 19s)
 echo "[4/6] mksquashfs -> $SQUASHFS (level $SQUASHFS_LEVEL block $SQUASHFS_BLOCK)"
 mksquashfs "$CHROOT_DIR" "$SQUASHFS" \
-    -comp zstd -Xcompression-level "$SQUASHFS_LEVEL" -b "$SQUASHFS_BLOCK" -processors 0 -noappend \
+    -comp zstd -Xcompression-level "$SQUASHFS_LEVEL" -b "$SQUASHFS_BLOCK" -processors 1 -noappend \
     -wildcards -e 'var/cache/apt/*' -e 'var/lib/apt/lists/*' \
     -fstime "$SOURCE_DATE_EPOCH"
 
