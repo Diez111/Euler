@@ -51,6 +51,8 @@ plymouth-themes
 xdg-desktop-portal
 xdg-desktop-portal-wlr
 libc6
+live-boot
+live-config
 locales
 tzdata
 ca-certificates

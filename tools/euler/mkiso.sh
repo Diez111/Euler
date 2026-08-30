@@ -141,6 +141,36 @@ fi
 chmod 644 "$CHROOT_DIR/etc/fstab" 2>/dev/null || true
 chmod 644 "$CHROOT_DIR/etc/crypttab" 2>/dev/null || true
 
+# 2.5. Inyectar instalador Euler (100% Rust) dentro del live — todo-uno (live USB = 1 ISO con instalador adentro)
+echo "[2.5] Inyectando euler-installer dentro del chroot (todo-uno)"
+if command -v cargo >/dev/null 2>&1; then
+    echo "[inject] cargo build --release --bins (host)"
+    (cd "$ROOT_DIR" && cargo build --release --bins 2>&1 | tail -n 20) || echo "[warn] cargo build falló, ISO seguirá sin instalador"
+    for bin in euler-installer euler-installer-daemon euler-installer-gui; do
+        if [[ -f "$ROOT_DIR/target/release/$bin" ]]; then
+            install -Dm755 "$ROOT_DIR/target/release/$bin" "$CHROOT_DIR/usr/local/bin/$bin"
+            echo "[inject] $bin -> /usr/local/bin/$bin"
+            # symlink compat en /usr/bin
+            ln -sf "/usr/local/bin/$bin" "$CHROOT_DIR/usr/bin/$bin" 2>/dev/null || true
+        fi
+    done
+    # .desktop para el live (aparece en menú live)
+    mkdir -p "$CHROOT_DIR/usr/share/applications"
+    cat > "$CHROOT_DIR/usr/share/applications/euler-installer.desktop" <<'DESKTOP'
+[Desktop Entry]
+Name=Instalar Euler
+Comment=Instalador Euler — BTRFS + LUKS2 + EFI
+Exec=sh -c 'x-terminal-emulator -e "sudo /usr/local/bin/euler-installer-gui 2>/dev/null || sudo /usr/local/bin/euler-installer --help; exec bash"'
+Icon=system-software-install
+Terminal=false
+Type=Application
+Categories=System;Utility;
+DESKTOP
+    chmod 644 "$CHROOT_DIR/usr/share/applications/euler-installer.desktop" 2>/dev/null || true
+else
+    echo "[warn] cargo no encontrado — ISO sin instalador inyectado"
+fi
+
 # 3. Hooks chroot: actualizar initramfs, generar locales, crear usuario live
 echo "[3/6] Hooks chroot"
 systemd-nspawn -D "$CHROOT_DIR" --as-pid2 /bin/bash -c "
@@ -210,11 +240,11 @@ terminal_output gfxterm
 set gfxmode=auto
 
 menuentry "Euler Live (testing)" {
-    linux /live/vmlinuz boot=live findiso=${iso_path} quiet splash mitigations=auto,nosmt preempt=voluntary transparent_hugepage=madvise zswap.enabled=0
+    linux /live/vmlinuz boot=live findiso=${iso_path} username=euler live-config.username=euler quiet splash mitigations=auto,nosmt preempt=voluntary transparent_hugepage=madvise zswap.enabled=0
     initrd /live/initrd.img
 }
 menuentry "Euler Live (failsafe)" {
-    linux /live/vmlinuz boot=live findiso=${iso_path} nomodeset noapic
+    linux /live/vmlinuz boot=live findiso=${iso_path} username=euler live-config.username=euler nomodeset noapic
     initrd /live/initrd.img
 }
 GRUBCFG
@@ -224,10 +254,10 @@ if command -v grub-mkstandalone >/dev/null 2>&1; then
     grub-mkstandalone \
         --format=x86_64-efi \
         --output="$BUILD_DIR/BOOTX64.EFI" \
-        --modules="part_gpt part_msdos fat iso9660 normal boot linux configfile loopback chain efifwsetup efi_gop efi_uga ls search search_label gfxterm gfxterm_background test all_video loadenv" \
+        --modules="part_gpt part_msdos fat iso9660 normal boot linux configfile loopback chain efifwsetup efi_gop ls search search_label gfxterm gfxterm_background test all_video loadenv" \
         --locales="" \
         --themes="" \
-        "boot/grub/grub.cfg=$ISO_DIR/boot/grub/grub.cfg" 2>/dev/null || echo "[warn] grub-mkstandalone falló"
+        "boot/grub/grub.cfg=$ISO_DIR/boot/grub/grub.cfg" 2>&1 || echo "[warn] grub-mkstandalone falló"
     # Montar EFI img y copiar BOOTX64.EFI (con trap)
     MNT_EFI="$(mktemp -d)"
     if mount -o loop "$EFI_IMG" "$MNT_EFI"; then
@@ -266,9 +296,26 @@ else
     MNT_EFI2=""
 fi
 
-# ISO final — intenta híbrido, limpia archivo parcial entre intentos
+# ISO final — intenta híbrido BIOS+UEFI, limpia archivo parcial entre intentos
 rm -f -- "$ISO_OUT"
-if [[ -f /usr/lib/ISOLINUX/isohdpfx.bin ]]; then
+# Intento 1: híbrido BIOS (ISOLINUX) + EFI si existe
+if [[ -f /usr/lib/ISOLINUX/isohdpfx.bin && -f "$EFI_IMG" ]]; then
+    xorriso -as mkisofs \
+        -r -V "EULER_${RELEASE}" \
+        -o "$ISO_OUT" \
+        -J -joliet-long \
+        -isohybrid-mbr /usr/lib/ISOLINUX/isohdpfx.bin \
+        -partition_offset 16 \
+        --mbr-force-bootable \
+        -append_partition 2 0xEF "$EFI_IMG" \
+        -appended_part_as_gpt \
+        -iso_mbr_part_type 0x00 \
+        -c '/boot.catalog' \
+        -b '/boot/grub/i386-pc/eltorito.img' -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info \
+        -eltorito-alt-boot -e '--interval:appended_partition_2:all::' -no-emul-boot -isohybrid-gpt-basdat \
+        "$ISO_DIR" 2>/dev/null && echo "[iso] híbrido ISOLINUX+UEFI ok" || rm -f -- "$ISO_OUT"
+fi
+if [[ ! -f "$ISO_OUT" && -f /usr/lib/ISOLINUX/isohdpfx.bin ]]; then
     xorriso -as mkisofs \
         -r -V "EULER_${RELEASE}" \
         -o "$ISO_OUT" \
@@ -277,20 +324,34 @@ if [[ -f /usr/lib/ISOLINUX/isohdpfx.bin ]]; then
         "$ISO_DIR" 2>/dev/null && echo "[iso] híbrido ISOLINUX ok" || rm -f -- "$ISO_OUT"
 fi
 if [[ ! -f "$ISO_OUT" && -f /usr/lib/grub/i386-pc/boot_hybrid.img ]]; then
-    xorriso -as mkisofs \
-        -r -V "EULER_${RELEASE}" \
-        -o "$ISO_OUT" \
-        -J -joliet-long \
-        --grub2-mbr /usr/lib/grub/i386-pc/boot_hybrid.img \
-        "$ISO_DIR" 2>/dev/null && echo "[iso] híbrido GRUB ok" || rm -f -- "$ISO_OUT"
+    # GRUB híbrido con/sin EFI
+    if [[ -f "$EFI_IMG" ]]; then
+        xorriso -as mkisofs \
+            -r -V "EULER_${RELEASE}" \
+            -o "$ISO_OUT" \
+            -J -joliet-long \
+            --grub2-mbr /usr/lib/grub/i386-pc/boot_hybrid.img \
+            -partition_offset 16 --mbr-force-bootable -append_partition 2 0xEF "$EFI_IMG" -appended_part_as_gpt -iso_mbr_part_type 0x00 \
+            -c '/boot.catalog' -b '/boot/grub/i386-pc/eltorito.img' -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info \
+            -eltorito-alt-boot -e '--interval:appended_partition_2:all::' -no-emul-boot -isohybrid-gpt-basdat \
+            "$ISO_DIR" 2>/dev/null && echo "[iso] híbrido GRUB+UEFI ok" || rm -f -- "$ISO_OUT"
+    else
+        xorriso -as mkisofs \
+            -r -V "EULER_${RELEASE}" \
+            -o "$ISO_OUT" \
+            -J -joliet-long \
+            --grub2-mbr /usr/lib/grub/i386-pc/boot_hybrid.img \
+            "$ISO_DIR" 2>/dev/null && echo "[iso] híbrido GRUB ok" || rm -f -- "$ISO_OUT"
+    fi
 fi
 if [[ ! -f "$ISO_OUT" ]]; then
-    # Fallback no híbrido
+    # Fallback no híbrido (no booteable UEFI, solo BIOS fallback)
     xorriso -as mkisofs \
         -r -V "EULER_${RELEASE}" \
         -o "$ISO_OUT" \
         -J -joliet-long \
-        "$ISO_DIR"
+        "$ISO_DIR" 2>&1 | tail
+    echo "[warn] ISO fallback no híbrido — puede no bootear UEFI"
 fi
 if [[ ! -f "$ISO_OUT" ]]; then
     echo "[error] xorriso no pudo crear ISO" >&2; exit 1

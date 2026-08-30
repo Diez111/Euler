@@ -5,6 +5,10 @@ use euler_core::hw::HwProfile;
 use euler_installer::{build_plan, InstallRequest};
 
 fn parse_args(args: &[String]) -> Result<(InstallRequest, bool), String> {
+    // --detect-hardware no requiere device/hostname/username ni password (solo reporte)
+    if args.iter().any(|a| a == "--detect-hardware") {
+        print_hardware_report_and_exit();
+    }
     validate_args_len(args)?;
     let (encrypt, json_output, hw_profile, codecs, enable_bluetooth, enable_printer) =
         parse_flags(args)?;
